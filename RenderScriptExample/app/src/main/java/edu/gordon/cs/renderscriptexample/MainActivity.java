@@ -37,32 +37,29 @@ public class MainActivity extends Activity {
         new RenderRunner().execute();
     }
 
-    class RenderRunner extends AsyncTask<Void, Bitmap, Bitmap> {
+    class RenderRunner extends AsyncTask<Void, Bitmap, Void> {
         @Override
-        protected Bitmap doInBackground(Void... params) {
-            Bitmap img = BitmapFactory.decodeResource(getResources(), R.drawable.cocoa);
-            // Create an allocation (from the Renderscript library) from the bitmap
-            Allocation alloc = Allocation.createFromBitmap(mRs, img);
+        protected Void doInBackground(Void... params) {
             // Create a script to run our script.rs within our renderScript context
             ScriptC_script script = new ScriptC_script(mRs);
-            for(int i = 0; i < 1000; i ++) {
-                // Run the script's slowlyChange method on each pixel in our allocation
-                script.forEach_slowlyChange(alloc, alloc);
-                // Copy the allocation back to the bitmap
-                alloc.copyTo(img);
-                // Publish the progress to the UI thread to update the view
-                publishProgress(img);
+            Bitmap original = BitmapFactory.decodeResource(getResources(), R.drawable.cocoa);
+            while(true) {
+                Bitmap copy = original.copy(original.getConfig(), true);
+                // Create an allocation (from the Renderscript library) from the bitmap
+                Allocation alloc = Allocation.createFromBitmap(mRs, copy);
+                for (int i = 0; i < 300; i++) {
+                    // Run the script's slowlyChange method on each pixel in our allocation
+                    script.forEach_slowlyChange(alloc, alloc);
+                    // Copy the allocation back to the bitmap
+                    alloc.copyTo(copy);
+                    // Publish the progress to the UI thread to update the view
+                    publishProgress(copy);
+                }
             }
-            return img;
         }
         @Override
         protected void onProgressUpdate(Bitmap... bitmaps) {
             mImageView.setImageBitmap(bitmaps[0]);
-        }
-        @Override
-        protected  void onPostExecute(Bitmap bitmap) {
-            // Update the view
-            mImageView.setImageBitmap(bitmap);
         }
     }
 }
